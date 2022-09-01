@@ -1,21 +1,13 @@
 ###############################################################################
-sphinxcontrib-luadomain
+sphinx-mad-domain
 ###############################################################################
-
-.. image:: https://img.shields.io/pypi/v/sphinxcontrib-luadomain.svg
-    :target: https://pypi.python.org/pypi/sphinxcontrib-luadomain/
-.. image:: https://img.shields.io/pypi/pyversions/sphinxcontrib-luadomain.svg
-    :target: https://pypi.python.org/pypi/sphinxcontrib-luadomain/
-
 A sphinx lua domain.
 
 
 Installation
 ===============================================================================
 
-.. code-block:: bash
-
-    $ pip install sphinxcontrib-luadomain
+Download the .py file and place in _ext folder
 
 
 Sphinx integration
@@ -25,7 +17,7 @@ Add the following to your conf.py:
 
 .. code-block:: python
 
-    extensions = ['sphinxcontrib.luadomain']
+    extensions = ['sphinx-mad-domain']
 
 
 
@@ -40,20 +32,20 @@ Documenting class
 
 .. code-block:: rst
 
-    .. lua:class:: pl.List
+    .. mad:class:: pl.List
 
         Python-style list class.
 
-        .. lua:attribute:: size: number
+        .. mad:attribute:: size: number
 
             The list size.
 
-        .. lua:method:: append(elem)
+        .. mad:method:: append(elem)
 
             :param elem: The element to append
             :type elem: any
 
-        .. lua:staticmethod:: fromArray(a): pl.List
+        .. mad:staticmethod:: fromArray(a): pl.List
 
             Create a List from a raw array.
 
@@ -65,17 +57,17 @@ Class handle inheritance:
 
 .. code-block:: rst
 
-    .. lua:class:: ITransport
+    .. mad:class:: ITransport
 
-        .. lua:method:: startEngine(): boolean
+        .. mad:method:: startEngine(): boolean
             :virtual:
 
             :return: true if engine started
             :rtype: boolean
 
-    .. lua:class:: Car: ITransport
+    .. mad:class:: Car: ITransport
 
-        .. lua:method:: startEngine(): boolean
+        .. mad:method:: startEngine(): boolean
 
             :return: true if engine started
             :rtype: boolean
@@ -86,7 +78,7 @@ Method modifiers
 
 .. code-block:: rst
 
-    .. lua:method:: foo()
+    .. mad:method:: foo()
         :virtual:
         :abstract:
         :deprecated:
@@ -99,9 +91,9 @@ Documenting module
 
 .. code-block:: rst
 
-    .. lua:module:: pl.path
+    .. mad:module:: pl.path
 
-    .. lua:function:: join(p1, p2)
+    .. mad:function:: join(p1, p2)
 
         Return the path resulting from combining the individual paths.
 
@@ -119,16 +111,16 @@ Type alias
 
 .. code-block:: rst
 
-    .. lua:alias:: Packet = table<string, number>
+    .. mad:alias:: Packet = table<string, number>
 
        A packet.
 
 
-    .. lua:class:: MessageSender
+    .. mad:class:: MessageSender
 
         A message sender.
 
-        .. lua:method:: send(packet)
+        .. mad:method:: send(packet)
             :abstract:
 
             An abstract method.
@@ -142,6 +134,6 @@ Cross-references
 
 .. code-block:: rst
 
-    :lua:class:`pl.List`
+    :mad:class:`pl.List`
 
-    :lua:meth:`pl.List.append`
+    :mad:meth:`pl.List.append`
