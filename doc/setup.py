@@ -13,11 +13,11 @@ def readme():
 
 
 setup(
-    name='sphinxcontrib-luadomain',
-    version='1.1.1',
+    name='sphinxcontrib-mad-domain',
+    version='0.1',
     license='BSD',
-    author='Eliott Dumeix',
-    description='Sphinx domain for documenting Lua code',
+    author='Joshua Gray',
+    description='Sphinx domain for documenting MAD code',
     long_description=readme(),
     zip_safe=False,
     classifiers=[
@@ -29,6 +29,7 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.10',
         'Topic :: Documentation',
         'Topic :: Utilities',
     ],
@@ -36,5 +37,5 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=['Sphinx'],
-    namespace_packages=['sphinxcontrib'],
+    namespace_packages=['sphinx'],
 )

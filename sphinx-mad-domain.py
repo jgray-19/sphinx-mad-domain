@@ -838,13 +838,13 @@ class MadDomain(Domain):
         MadModuleIndex,
     ]
 
-    # def clear_doc(self, doc_name: str) -> None:
-    #     for fullname, (fn, _l) in list(self.data['objects'].items()):
-    #         if fn == doc_name:
-    #             del self.data['objects'][fullname]
-    #     for modname, (fn, _x, _x, _x) in list(self.data['modules'].items()):
-    #         if fn == doc_name:
-    #             del self.data['modules'][modname]
+    def clear_doc(self, doc_name: str) -> None:
+        for fullname, (fn, _l) in list(self.data['objects'].items()):
+            if fn == doc_name:
+                del self.data['objects'][fullname]
+        for modname, (fn, _x, _x, _x) in list(self.data['modules'].items()):
+            if fn == doc_name:
+                del self.data['modules'][modname]
 
     def merge_domaindata(self, doc_names: List[str], other_data: Dict) -> None:
         # XXX check duplicates?
