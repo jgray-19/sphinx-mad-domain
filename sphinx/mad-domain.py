@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-    sphinx.domains.lua
+    sphinx.domains.mad
     ~~~~~~~~~~~~~~~~~~~~~
 
-    The lua domain.
+    The mad domain.
 
+    adapted from sphinxcontrib-luadomain
+    :author: Eloitt Dumeix
+    :liscence: BSD, see LICENSE for details
+
+
+    Also from sphinx:
     :copyright: Copyright 2007-2017 by the Sphinx team, see AUTHORS.
     :license: BSD, see LICENSE for details.
 """
@@ -24,14 +30,14 @@ from sphinx.environment import BuildEnvironment
 from sphinx.builders import Builder
 from typing import Any, Dict, Iterable, Iterator, List, Tuple, Optional, Union
 
-MESSAGE_CATALOG_NAME = 'sphinx-luadomain'
+MESSAGE_CATALOG_NAME = 'sphinx-mad-domain'
 _ = get_translation(MESSAGE_CATALOG_NAME)
 
 logger = logging.getLogger(__name__)
 
-# REs for Lua signatures
-lua_sig_re = re.compile(
-    r'''^ ([\w.]*\.)?            # class name(s)
+# REs for Mad signatures
+mad_sig_re = re.compile(
+    r'''^ ([\w.]*[\.\:])?        # class name(s)
           (\w+)  \s*             # thing name
           (?: \((.*)\)           # optional: arguments
            (?:\s* -> \s* (.*))?  #           return annotation
@@ -86,21 +92,21 @@ def _pseudo_parse_arglist(sig_node: addnodes.desc_signature, arg_list: str) -> N
         sig_node += param_list
 
 
-class LuaField(Field):
+class MadField(Field):
     pass
 
 
-class LuaGroupedField(GroupedField):
+class MadGroupedField(GroupedField):
     pass
 
 
-class LuaTypedField(TypedField):
+class MadTypedField(TypedField):
     pass
 
 
-class LuaObject(ObjectDescription):
+class MadObject(ObjectDescription):
     """
-    Description of a general Lua object.
+    Description of a general Mad object.
 
     :cvar allow_nesting: Class is an object that allows for nested namespaces
     :vartype allow_nesting: bool
@@ -116,14 +122,14 @@ class LuaObject(ObjectDescription):
     }
 
     doc_field_types = [
-        LuaTypedField('parameter', label=_('Parameters'),
+        MadTypedField('parameter', label=_('Parameters'),
                       names=('param', 'parameter', 'arg', 'argument',
                              'keyword', 'kwarg', 'kwparam'),
                       typerolename='class', typenames=('paramtype', 'type'),
                       can_collapse=True),
         Field('returnvalue', label=_('Returns'), has_arg=False,
               names=('returns', 'return')),
-        LuaField('returntype', label=_('Return type'), has_arg=False,
+        MadField('returntype', label=_('Return type'), has_arg=False,
                  names=('rtype',), bodyrolename='class'),
     ]
 
@@ -150,7 +156,7 @@ class LuaObject(ObjectDescription):
         return False
 
     def handle_signature(self, sig: str, sig_node: addnodes.desc_signature) -> Tuple[str, str]:
-        """Transform a Lua signature into RST nodes.
+        """Transform a Mad signature into RST nodes.
 
         Return (fully qualified name of the thing, classname if any).
 
@@ -158,15 +164,15 @@ class LuaObject(ObjectDescription):
         * it is stripped from the displayed name if present
         * it is added to the full name (return value) if not present
         """
-        m = lua_sig_re.match(sig)
+        m = mad_sig_re.match(sig)
         if m is None:
             raise ValueError
         name_prefix, name, arg_list, ret_ann = m.groups()
 
         # determine module and class name (if applicable), as well as full name
         modname = self.options.get(
-            'module', self.env.ref_context.get('lua:module'))
-        class_name = self.env.ref_context.get('lua:class')
+            'module', self.env.ref_context.get('mad:module'))
+        class_name = self.env.ref_context.get('mad:class')
         if class_name:
             add_module = False
             if name_prefix and name_prefix.startswith(class_name):
@@ -201,7 +207,7 @@ class LuaObject(ObjectDescription):
             sig_node += addnodes.desc_addname(name_prefix, name_prefix)
         elif add_module and self.env.config.add_module_names:
             modname = self.options.get(
-                'module', self.env.ref_context.get('lua:module'))
+                'module', self.env.ref_context.get('mad:module'))
             if modname:
                 node_text = modname + '.'
                 sig_node += addnodes.desc_addname(node_text, node_text)
@@ -232,7 +238,7 @@ class LuaObject(ObjectDescription):
 
     def add_target_and_index(self, name_cls: str, sig: str, sig_node: addnodes.desc_signature) -> None:
         modname = self.options.get(
-            'module', self.env.ref_context.get('lua:module'))
+            'module', self.env.ref_context.get('mad:module'))
         fullname = (modname and modname + '.' or '') + name_cls[0]
         # note target
 
@@ -241,7 +247,7 @@ class LuaObject(ObjectDescription):
             sig_node['ids'].append(fullname)
             sig_node['first'] = (not self.names)
             self.state.document.note_explicit_target(sig_node)
-            objects = self.env.domaindata['lua']['objects']
+            objects = self.env.domaindata['mad']['objects']
             if fullname in objects:
                 self.state_machine.reporter.warning(
                     'duplicate object description of %s, ' % fullname +
@@ -259,14 +265,14 @@ class LuaObject(ObjectDescription):
     def before_content(self) -> None:
         """Handle object nesting before content
 
-        :lua:class:`LuaObject` represents Lua language constructs. For
-        constructs that are nestable, such as a Lua classes, this method will
+        :mad:class:`MadObject` represents Mad language constructs. For
+        constructs that are nestable, such as a Mad classes, this method will
         build up a stack of the nesting heirarchy so that it can be later
-        de-nested correctly, in :lua:meth:`after_content`.
+        de-nested correctly, in :mad:meth:`after_content`.
 
         For constructs that aren't nestable, the stack is bypassed, and instead
         only the most recent object is tracked. This object prefix name will be
-        removed with :lua:meth:`after_content`.
+        removed with :mad:meth:`after_content`.
         """
         prefix = None
         if self.names:
@@ -280,14 +286,14 @@ class LuaObject(ObjectDescription):
             elif name_prefix:
                 prefix = name_prefix.strip('.')
         if prefix:
-            self.env.ref_context['lua:class'] = prefix
+            self.env.ref_context['mad:class'] = prefix
             if self.allow_nesting:
-                classes = self.env.ref_context.setdefault('lua:classes', [])
+                classes = self.env.ref_context.setdefault('mad:classes', [])
                 classes.append(prefix)
         if 'module' in self.options:
-            modules = self.env.ref_context.setdefault('lua:modules', [])
-            modules.append(self.env.ref_context.get('lua:module'))
-            self.env.ref_context['lua:module'] = self.options['module']
+            modules = self.env.ref_context.setdefault('mad:modules', [])
+            modules.append(self.env.ref_context.get('mad:module'))
+            self.env.ref_context['mad:module'] = self.options['module']
 
     def after_content(self) -> None:
         """Handle object de-nesting after content
@@ -297,25 +303,25 @@ class LuaObject(ObjectDescription):
 
         If this class is not a nestable object, the list of classes should not
         be altered as we didn't affect the nesting levels in
-        :lua:meth:`before_content`.
+        :mad:meth:`before_content`.
         """
-        classes = self.env.ref_context.setdefault('lua:classes', [])
+        classes = self.env.ref_context.setdefault('mad:classes', [])
         if self.allow_nesting:
             try:
                 classes.pop()
             except IndexError:
                 pass
-        self.env.ref_context['lua:class'] = (classes[-1] if len(classes) > 0
+        self.env.ref_context['mad:class'] = (classes[-1] if len(classes) > 0
                                              else None)
         if 'module' in self.options:
-            modules = self.env.ref_context.setdefault('lua:modules', [])
+            modules = self.env.ref_context.setdefault('mad:modules', [])
             if modules:
-                self.env.ref_context['lua:module'] = modules.pop()
+                self.env.ref_context['mad:module'] = modules.pop()
             else:
-                self.env.ref_context.pop('lua:module')
+                self.env.ref_context.pop('mad:module')
 
 
-class LuaModuleLevel(LuaObject):
+class MadModuleLevel(MadObject):
     """
     Description of an object on module level (functions, data).
     """
@@ -336,7 +342,7 @@ class LuaModuleLevel(LuaObject):
             return ''
 
 
-class LuaClassLike(LuaObject):
+class MadClassLike(MadObject):
     """
     Description of a class-like object (classes, interfaces).
     """
@@ -346,7 +352,7 @@ class LuaClassLike(LuaObject):
     CLASS_DEF_RE = re.compile(r'^\s*([\w.]*)(?:\s*:\s*(.*))?')
 
     def handle_signature(self, sig: str, sig_node: addnodes.desc_signature) -> Tuple[str, str]:
-        """Transform a Lua signature into RST nodes.
+        """Transform a Mad signature into RST nodes.
 
         Return (fully qualified name of the thing, classname if any).
 
@@ -365,8 +371,8 @@ class LuaClassLike(LuaObject):
             base_classes = []
 
         # determine module and class name (if applicable), as well as full name
-        modname = self.options.get('module', self.env.ref_context.get('lua:module'))
-        classname = self.env.ref_context.get('lua:class')
+        modname = self.options.get('module', self.env.ref_context.get('mad:module'))
+        classname = self.env.ref_context.get('mad:class')
 
         sig_node['module'] = modname
         sig_node['class'] = classname
@@ -376,7 +382,7 @@ class LuaClassLike(LuaObject):
         if sig_prefix:
             sig_node += addnodes.desc_annotation(sig_prefix, sig_prefix)
 
-        modname = self.options.get('module', self.env.ref_context.get('lua:module'))
+        modname = self.options.get('module', self.env.ref_context.get('mad:module'))
         if modname:
             nodetext = modname + '.'
             sig_node += addnodes.desc_addname(nodetext, nodetext)
@@ -386,9 +392,9 @@ class LuaClassLike(LuaObject):
 
         for base in base_classes:
             p_node = addnodes.pending_xref(
-                '', refdomain='lua', reftype='type',
+                '', refdomain='mad', reftype='type',
                 reftarget=base, modname=None, classname=None)
-            p_node['lua:class'] = base
+            p_node['mad:class'] = base
             p_node += nodes.Text(base)
             sig_node += p_node
 
@@ -398,7 +404,7 @@ class LuaClassLike(LuaObject):
         return class_name, ''
 
     def add_target_and_index(self, name_cls: str, sig: str, sig_node: addnodes.desc_signature) -> None:
-        modname = self.options.get('module', self.env.ref_context.get('lua:module'))
+        modname = self.options.get('module', self.env.ref_context.get('mad:module'))
         fullname = (modname and modname + '.' or '') + name_cls[0]
         # note target
 
@@ -408,7 +414,7 @@ class LuaClassLike(LuaObject):
             sig_node['first'] = (not self.names)
 
             self.state.document.note_explicit_target(sig_node)
-            objects = self.env.domaindata['lua']['objects']
+            objects = self.env.domaindata['mad']['objects']
             if fullname in objects:
                 self.state_machine.reporter.warning(
                     'duplicate object description of %s, ' % fullname +
@@ -437,7 +443,7 @@ class LuaClassLike(LuaObject):
             return ''
 
 
-class LuaClassAttribute(LuaObject):
+class MadClassAttribute(MadObject):
     """
     Description of a class attribute.
     """
@@ -452,8 +458,8 @@ class LuaClassAttribute(LuaObject):
         attr_name, attr_type = m.groups()
 
         # determine module and class name (if applicable), as well as full name
-        modname = self.options.get('module', self.env.ref_context.get('lua:module'))
-        classname = self.env.ref_context.get('lua:class')
+        modname = self.options.get('module', self.env.ref_context.get('mad:module'))
+        classname = self.env.ref_context.get('mad:class')
 
         sig_node['module'] = modname
         sig_node['class'] = classname
@@ -467,7 +473,7 @@ class LuaClassAttribute(LuaObject):
         return full_attr_name
 
     def add_target_and_index(self, name: str, sig: str, sig_node: addnodes.desc_signature) -> None:
-        mod_name = self.options.get('module', self.env.ref_context.get('lua:module'))
+        mod_name = self.options.get('module', self.env.ref_context.get('mad:module'))
         full_name = (mod_name and mod_name + '.' or '') + name
 
         if full_name not in self.state.document.ids:
@@ -476,7 +482,7 @@ class LuaClassAttribute(LuaObject):
             sig_node['first'] = (not self.names)
 
             self.state.document.note_explicit_target(sig_node)
-            objects = self.env.domaindata['lua']['objects']
+            objects = self.env.domaindata['mad']['objects']
             if full_name in objects:
                 self.state_machine.reporter.warning(
                     'duplicate object description of %s, ' % full_name +
@@ -501,7 +507,7 @@ class LuaClassAttribute(LuaObject):
         return _('%s (attribute)') % attr
 
 
-class LuaAliasObject(ObjectDescription):
+class MadAliasObject(ObjectDescription):
     object_type = 'class'
     ALIAS_RE = re.compile(r'^ *([\w.]*) *= *(.*)$')
 
@@ -510,9 +516,9 @@ class LuaAliasObject(ObjectDescription):
 
     def handle_signature(self, signature: str, sig_node: addnodes.desc_signature) -> Tuple[str, str]:
         """Transform an alias declaration into RST nodes.
-        .. lua:alias:: Bar = table<string, number>
+        .. mad:alias:: Bar = table<string, number>
         """
-        m = LuaAliasObject.ALIAS_RE.match(signature)
+        m = MadAliasObject.ALIAS_RE.match(signature)
         if m is None:
             raise ValueError
         alias, type_alias = m.groups()
@@ -534,7 +540,7 @@ class LuaAliasObject(ObjectDescription):
             sig_node['ids'].append(alias_name)
             sig_node['first'] = (not self.names)
             self.state.document.note_explicit_target(sig_node)
-            objects = self.env.domaindata['lua']['objects']
+            objects = self.env.domaindata['mad']['objects']
             if alias_name in objects:
                 self.state_machine.reporter.warning(
                     'duplicate object description of %s, ' % alias_name +
@@ -558,7 +564,7 @@ class LuaAliasObject(ObjectDescription):
         return _('%s (alias)') % alias_name
 
 
-class LuaClassMember(LuaObject):
+class MadClassMember(MadObject):
     """
     Description of a class member (methods, attributes).
     """
@@ -571,7 +577,7 @@ class LuaClassMember(LuaObject):
             return 'static '
         elif self.objtype == 'classmethod':
             return 'classmethod '
-        return super(LuaClassMember, self).get_signature_prefix(signature)
+        return super(MadClassMember, self).get_signature_prefix(signature)
 
     def get_index_text(self, modname: str, name_cls: str) -> str:
         name, cls = name_cls
@@ -630,7 +636,7 @@ class LuaClassMember(LuaObject):
             return ''
 
 
-class LuaModule(Directive):
+class MadModule(Directive):
     """
     Directive to mark description of a new module.
     """
@@ -650,15 +656,15 @@ class LuaModule(Directive):
         env = self.state.document.settings.env
         modname = self.arguments[0].strip()
         no_index = 'noindex' in self.options
-        env.ref_context['lua:module'] = modname
+        env.ref_context['mad:module'] = modname
         ret = []
         if not no_index:
-            env.domaindata['lua']['modules'][modname] = \
+            env.domaindata['mad']['modules'][modname] = \
                 (env.docname, self.options.get('synopsis', ''),
                  self.options.get('platform', ''), 'deprecated' in self.options)
             # make a duplicate entry in 'objects' to facilitate searching for
-            # the module in LuaDomain.find_obj()
-            env.domaindata['lua']['objects'][modname] = (env.docname, 'module')
+            # the module in MadDomain.find_obj()
+            env.domaindata['mad']['objects'][modname] = (env.docname, 'module')
             target_node = nodes.target('', '', ids=['module-' + modname],
                                       ismod=True)
             self.state.document.note_explicit_target(target_node)
@@ -672,7 +678,7 @@ class LuaModule(Directive):
         return ret
 
 
-class LuaCurrentModule(Directive):
+class MadCurrentModule(Directive):
     """
     This directive is just to tell Sphinx that we're documenting
     stuff in module foo, but links to module foo won't lead here.
@@ -688,17 +694,17 @@ class LuaCurrentModule(Directive):
         env = self.state.document.settings.env
         modname = self.arguments[0].strip()
         if modname == 'None':
-            env.ref_context.pop('lua:module', None)
+            env.ref_context.pop('mad:module', None)
         else:
-            env.ref_context['lua:module'] = modname
+            env.ref_context['mad:module'] = modname
         return []
 
 
-class LuaXRefRole(XRefRole):
+class MadXRefRole(XRefRole):
     def process_link(self, env: BuildEnvironment, ref_node: nodes.Element, has_explicit_title: bool,
                      title: str, target: str) -> Tuple[str, str]:
-        ref_node['lua:module'] = env.ref_context.get('lua:module')
-        ref_node['lua:class'] = env.ref_context.get('lua:class')
+        ref_node['mad:module'] = env.ref_context.get('mad:module')
+        ref_node['mad:class'] = env.ref_context.get('mad:class')
         if not has_explicit_title:
             title = title.lstrip('.')  # only has a meaning for the target
             target = target.lstrip('~')  # only has a meaning for the title
@@ -712,13 +718,13 @@ class LuaXRefRole(XRefRole):
         return title, target
 
 
-class LuaModuleIndex(Index):
+class MadModuleIndex(Index):
     """
-    Index subclass to provide the Lua module index.
+    Index subclass to provide the Mad module index.
     """
 
     name = 'modindex'
-    localname = _('Lua Module Index')
+    localname = _('Mad Module Index')
     shortname = _('modules')
 
     def generate(self, docnames: Iterable[str] = None) -> Tuple[List[Tuple[str, List[List[Union[str, int]]]]], bool]:
@@ -782,10 +788,10 @@ class LuaModuleIndex(Index):
         return sorted_content, collapse
 
 
-class LuaDomain(Domain):
-    """Lua language domain."""
-    name = 'lua'
-    label = 'Lua'
+class MadDomain(Domain):
+    """Mad language domain."""
+    name = 'mad'
+    label = 'Mad'
     object_types: Dict[str, ObjType] = {
         'function': ObjType(_('function'), 'func', 'obj'),
         'data': ObjType(('data'), 'data', 'obj'),
@@ -800,36 +806,36 @@ class LuaDomain(Domain):
     }
 
     directives = {
-        'function': LuaModuleLevel,
-        'data': LuaModuleLevel,
-        'class': LuaClassLike,
-        'alias': LuaAliasObject,
-        'exception': LuaClassLike,
-        'method': LuaClassMember,
-        'classmethod': LuaClassMember,
-        'staticmethod': LuaClassMember,
-        'attribute': LuaClassAttribute,
-        'module': LuaModule,
-        'currentmodule': LuaCurrentModule,
+        'function': MadModuleLevel,
+        'data': MadModuleLevel,
+        'class': MadClassLike,
+        'alias': MadAliasObject,
+        'exception': MadClassLike,
+        'method': MadClassMember,
+        'classmethod': MadClassMember,
+        'staticmethod': MadClassMember,
+        'attribute': MadClassAttribute,
+        'module': MadModule,
+        'currentmodule': MadCurrentModule,
     }
     roles = {
-        'data': LuaXRefRole(),
-        'exc': LuaXRefRole(),
-        'func': LuaXRefRole(fix_parens=True),
-        'class': LuaXRefRole(),
-        'alias': LuaXRefRole(),
-        'const': LuaXRefRole(),
-        'attr': LuaXRefRole(),
-        'meth': LuaXRefRole(fix_parens=True),
-        'mod': LuaXRefRole(),
-        'obj': LuaXRefRole(),
+        'data': MadXRefRole(),
+        'exc': MadXRefRole(),
+        'func': MadXRefRole(fix_parens=True),
+        'class': MadXRefRole(),
+        'alias': MadXRefRole(),
+        'const': MadXRefRole(),
+        'attr': MadXRefRole(),
+        'meth': MadXRefRole(fix_parens=True),
+        'mod': MadXRefRole(),
+        'obj': MadXRefRole(),
     }
     initial_data: Dict[str, Dict[str, Tuple[Any]]] = {
         'objects': {},  # fullname -> docname, objtype
         'modules': {},  # modname -> docname, synopsis, platform, deprecated
     }
     indices = [
-        LuaModuleIndex,
+        MadModuleIndex,
     ]
 
     def clear_doc(self, doc_name: str) -> None:
@@ -851,7 +857,7 @@ class LuaDomain(Domain):
 
     def find_obj(self, env: BuildEnvironment, modname: str, class_name: str, name: str, type: Optional[str],
                  search_mode: int = 0) -> List[Tuple[str, Any]]:
-        """Find a Lua object for "name", perhaps using the given module
+        """Find a Mad object for "name", perhaps using the given module
         and/or classname.  Returns a list of (name, object entry) tuples.
         """
         # skip parens
@@ -891,8 +897,8 @@ class LuaDomain(Domain):
 
     def resolve_xref(self, env: BuildEnvironment, from_doc_name: str, builder: Builder,
                      type: str, target: str, node: nodes.Element, cont_node: nodes.Node)-> Optional[nodes.Node]:
-        modname = node.get('lua:module')
-        class_name = node.get('lua:class')
+        modname = node.get('mad:module')
+        class_name = node.get('mad:class')
         search_mode = 0
         matches = self.find_obj(env, modname, class_name, target,
                                 type, search_mode)
@@ -901,7 +907,7 @@ class LuaDomain(Domain):
         elif len(matches) > 1:
             logger.warning('more than one target found for cross-reference %r: %s',
                            target, ', '.join(match[0] for match in matches),
-                           type='ref', subtype='lua', location=node)
+                           type='ref', subtype='mad', location=node)
 
         name, obj = matches[0]
 
@@ -914,19 +920,19 @@ class LuaDomain(Domain):
 
     def resolve_any_xref(self, env: BuildEnvironment, from_doc_name: str, builder: Builder, target: str,
                          node: nodes.Node, cont_node: nodes.Node) -> List[Tuple[str, nodes.Node]]:
-        modname = node.get('lua:module')
-        class_name = node.get('lua:class')
+        modname = node.get('mad:module')
+        class_name = node.get('mad:class')
         results:  List[Tuple[str, nodes.Node]] = []
 
         # always search in "refspecific" mode with the :any: role
         matches = self.find_obj(env, modname, class_name, target, None, 1)
         for name, obj in matches:
             if obj[1] == 'module':
-                results.append(('lua:mod',
+                results.append(('mad:mod',
                                 self._make_module_refnode(builder, from_doc_name,
                                                           name, cont_node)))
             else:
-                results.append(('lua:' + self.role_for_objtype(obj[1]),
+                results.append(('mad:' + self.role_for_objtype(obj[1]),
                                 make_refnode(builder, from_doc_name, obj[0], name,
                                              cont_node, name)))
         return results
@@ -952,8 +958,8 @@ class LuaDomain(Domain):
                 yield (refname, refname, type, docname, refname, 1)
 
     def get_full_qualified_name(self, node: nodes.Element) -> Optional[str]:
-        modname = node.get('lua:module')
-        class_name = node.get('lua:class')
+        modname = node.get('mad:module')
+        class_name = node.get('mad:class')
         target = node.get('reftarget')
         if target is None:
             return None
@@ -962,7 +968,7 @@ class LuaDomain(Domain):
 
 
 def setup(app):
-    app.add_domain(LuaDomain)
+    app.add_domain(MadDomain)
 
     return {
         'version': 'builtin',
