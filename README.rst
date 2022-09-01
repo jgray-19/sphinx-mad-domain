@@ -1,7 +1,7 @@
 ###############################################################################
 sphinx-mad-domain
 ###############################################################################
-A sphinx lua domain.
+A sphinx mad domain derived from the sphinx lua domain by boolangery
 
 
 Installation
